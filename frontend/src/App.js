@@ -26,6 +26,13 @@ if (!role) {
   alert("Selecciona si eres profesor o alumno antes de entrar");
   return;
 }
+
+// validacion correo con @
+if (!email || !email.includes("@")) {
+  alert("Ingresa un correo válido (debe contener @).");
+  return;
+}
+
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -106,17 +113,22 @@ if (pagina === "ensayo") {
       ) : (
         <form onSubmit={handleSubmit}>
           <h3>{isRegister ? "Crear cuenta" : "Iniciar sesión"} ({role})</h3>
+
           <input
             placeholder="Correo"
+            type="email"
+            required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           /><br />
+
           <input
             placeholder="Contraseña"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           /><br />
+
           <button type="submit">{isRegister ? "Registrarse" : "Entrar"}</button>
           <p
             onClick={() => setIsRegister(!isRegister)}

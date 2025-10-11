@@ -8,12 +8,14 @@ export default function BancoPreguntas({ volver }) {
   const [alt3, setAlt3] = useState("");
   const [alt4, setAlt4] = useState("");
   const [editId, setEditId] = useState(null);
-const [correctIndex, setCorrectIndex] = useState(null); // 0..3 o null
+  const [correctIndex, setCorrectIndex] = useState(null); // 0..3 o null
   const [subject, setSubject] = useState("matematica");
   const [materiaVer, setMateriaVer] = useState("matematica");
   const [preguntas, setPreguntas] = useState([]);
+  const [imageFile, setImageFile] = useState(null);
+  const [removeImage, setRemoveImage] = useState(false);
 
-const handleCrear = async (e) => {
+  const handleCrear = async (e) => {
   e.preventDefault();
 
   // validar que el usuario eligió una alternativa correcta
@@ -21,23 +23,36 @@ const handleCrear = async (e) => {
     alert("Selecciona la alternativa correcta antes de guardar");
     return;
   }
+  // validar campos mínimos
+  if (!question.trim()) {
+    alert("La pregunta no puede estar vacía");
+    return;
+  }
 
+  if (![alt1, alt2, alt3, alt4].every(a => a && a.trim().length > 0)) {
+    alert("Debes completar las 4 alternativas");
+    return;
+  }
   const alternativas = [alt1, alt2, alt3, alt4];
   const correctAnswer = alternativas[correctIndex];
+
+  const form = new FormData();
+  form.append('question', question);
+  form.append('alternatives', JSON.stringify(alternativas));
+  form.append('correct_answer', correctAnswer);
+  form.append('subject', subject);
+  if (imageFile) form.append('image', imageFile);
+  if (editId) form.append('remove_image', removeImage ? 'true' : 'false');
 
   const res = await fetch(
     editId ? `http://localhost:5000/api/questions/${editId}` : "http://localhost:5000/api/questions",
     {
       method: editId ? "PUT" : "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        question,
-        alternatives: alternativas,
-        correct_answer: correctAnswer,
-        subject,
-      }),
+      body: form // No ponger Content-Type fetch lo setea con boundary
     }
   );
+
+
   const data = await res.json();
   alert(data.message || data.error);
 
@@ -45,18 +60,26 @@ const handleCrear = async (e) => {
   setQuestion(""); setAlt1(""); setAlt2(""); setAlt3(""); setAlt4("");
   setSubject("matematica");
   setCorrectIndex(null);
-  if (typeof setEditId === "function") setEditId(null); // si usas editId
-  // refrescar lista si estás viendo preguntas
-  handleVer();
+
+  setEditId(null);
+  setImageFile(null);
+  setRemoveImage(false);
+
+  // pasar a modo "ver" y refrescar lista de la materia actual
+  setMode("ver");
+  setMateriaVer(subject);
+  handleVer(subject);
+  
 };
 
 
-  const handleVer = async () => {
-    const res = await fetch(`http://localhost:5000/api/questions/${materiaVer}`);
+  const handleVer = async (materia = materiaVer) => {
+    const res = await fetch(`http://localhost:5000/api/questions/${materia}`);
     const data = await res.json();
     setPreguntas(data);
   };
-const eliminarPregunta = async (id) => {
+
+  const eliminarPregunta = async (id) => {
   if (!window.confirm("¿Seguro que quieres eliminar esta pregunta?")) return;
   const res = await fetch(`http://localhost:5000/api/questions/${id}`, {
     method: "DELETE",
@@ -82,7 +105,7 @@ setEditId(p.id); // si usas editId
     <div style={{ padding: 20 }}>
       <h2>Banco de Preguntas</h2>
       <button onClick={() => setMode("crear")}>Agregar pregunta</button>
-      <button onClick={() => setMode("ver")}>Ver preguntas</button>
+      <button onClick={() => { setMode("ver"); handleVer(); }}>Ver preguntas</button>
 
       {mode === "crear" && (
         <form onSubmit={handleCrear}>
@@ -91,8 +114,31 @@ setEditId(p.id); // si usas editId
           <input placeholder="Alternativa 2" value={alt2} onChange={e => setAlt2(e.target.value)} /><br/>
           <input placeholder="Alternativa 3" value={alt3} onChange={e => setAlt3(e.target.value)} /><br/>
           <input placeholder="Alternativa 4" value={alt4} onChange={e => setAlt4(e.target.value)} /><br/>
-          <select value={correctIndex ?? ""} onChange={e => {
-  const v = e.target.value;
+    
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const f = e.target.files?.[0] || null;
+              setImageFile(f);
+              setRemoveImage(false);
+            }}
+          /><br/>
+           {imageFile && <small>Imagen seleccionada: {imageFile.name}</small>}<br/>
+           {editId && (
+             <label style={{ display: 'block', marginTop: 6 }}>
+               <input
+                 type="checkbox"
+                 checked={removeImage}
+                 onChange={(e) => {
+                   setRemoveImage(e.target.checked);
+                   if (e.target.checked) setImageFile(null);
+                 }}
+               /> Quitar imagen actual
+             </label>
+          )}
+
+          <select value={correctIndex ?? ""} onChange={e => { const v = e.target.value;
   setCorrectIndex(v === "" ? null : Number(v));
 }}>
   <option value="">--Selecciona alternativa correcta--</option>
@@ -119,13 +165,25 @@ setEditId(p.id); // si usas editId
             <option value="ciencias">Ciencias</option>
             <option value="lenguaje">Lenguaje</option>
           </select>
-          <button onClick={handleVer}>Ver preguntas</button>
+
+          <button onClick={() => handleVer()}>Ver preguntas</button>
             <ul>
               {preguntas.map(p => (
                 <li key={p.id}>
                   <b>{p.question}</b><br/>
-                  {p.alternatives.map((a,i) => <span key={i}>{a} | </span>)}<br/>
+                  {(p.alternatives || []).map((a,i) => <span key={i}>{a}{i<3 ? " | " : ""} </span>)}<br/>
                   <i>Correcta: {p.correct_answer}</i><br/>
+                  {p.image_url && (
+                    <div style={{ margin: '6px 0' }}>
+                      <img
+                        src={`http://localhost:5000${p.image_url}`}
+                        alt="ilustración de la pregunta"
+                        style={{ maxWidth: 240, height: 'auto', display: 'block' }}
+                      />
+                    </div>
+                  )}
+
+                  
                   <button onClick={() => editarPregunta(p)}>Editar</button>
                   <button onClick={() => eliminarPregunta(p.id)}>Eliminar</button>
                 </li>

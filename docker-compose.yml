@@ -29,6 +29,12 @@ services:
       - "3000:3000"
     depends_on:
       - backend
+      
+  adminer:
+    image: adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
 
 volumes:
   postgres_data:
