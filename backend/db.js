@@ -11,7 +11,6 @@ const pool = new Pool({
 
 pool.query(`
   -- Usuarios
-
   CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     email TEXT UNIQUE NOT NULL,
@@ -21,21 +20,17 @@ pool.query(`
   CREATE INDEX IF NOT EXISTS idx_users_role_email ON users(role, email);
 
   -- Banco de preguntas
-
   CREATE TABLE IF NOT EXISTS questions (
     id SERIAL PRIMARY KEY,
     question TEXT NOT NULL,
     alternatives TEXT[] NOT NULL CHECK (cardinality(alternatives) = 4),
     correct_answer TEXT NOT NULL,
     subject TEXT NOT NULL CHECK (subject IN ('matematica','historia','ciencias','lenguaje')),
+    image_url TEXT,
     created_at TIMESTAMP DEFAULT NOW()
   );
-  CREATE INDEX IF NOT EXISTS idx_student_exams_email ON student_exams(student_email);
-  CREATE INDEX IF NOT EXISTS idx_student_exams_email_subject ON student_exams(student_email, subject);
-
 
   -- Ensayos individuales por alumno (vista profesor)
-
   CREATE TABLE IF NOT EXISTS student_exams (
     id SERIAL PRIMARY KEY,
     student_email TEXT NOT NULL,
@@ -43,10 +38,10 @@ pool.query(`
     score INTEGER NOT NULL,
     created_at TIMESTAMP DEFAULT NOW()
   );
+  CREATE INDEX IF NOT EXISTS idx_student_exams_email ON student_exams(student_email);
+  CREATE INDEX IF NOT EXISTS idx_student_exams_email_subject ON student_exams(student_email, subject);
 
-
-  -- Resultados resumidos para progreso del alumno (2 últimos por materia)
-
+  -- Resultados resumidos para progreso del alumno
   CREATE TABLE IF NOT EXISTS results (
     id SERIAL PRIMARY KEY,
     student_email TEXT NOT NULL,
@@ -56,13 +51,7 @@ pool.query(`
     created_at TIMESTAMP DEFAULT NOW()
   );
   CREATE INDEX IF NOT EXISTS idx_results_email_subject ON results(student_email, subject);
-
-
-`);
-
-pool.query(`
-  ALTER TABLE questions
-  ADD COLUMN IF NOT EXISTS image_url TEXT;
+  CREATE INDEX IF NOT EXISTS idx_results_email_time ON results(LOWER(student_email), created_at DESC);
 `);
 
 
