@@ -1,7 +1,7 @@
-version: '3'
 services:
   postgres:
     image: postgres:15
+    container_name: iswprueba-postgres
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: pass
@@ -9,32 +9,51 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d plataforma"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  adminer:
+    image: adminer
+    container_name: iswprueba-adminer
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
 
   backend:
     build: ./backend
-    ports:
-      - "5000:5000"
-    depends_on:
-      - postgres
+    container_name: iswprueba-backend
     environment:
       DB_USER: user
       DB_PASSWORD: pass
       DB_NAME: plataforma
       DB_HOST: postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend/uploads:/usr/src/app/uploads
+    restart: unless-stopped
 
   frontend:
     build: ./frontend
-    ports:
-      - "3000:3000"
+    container_name: iswprueba-frontend
     depends_on:
       - backend
-      
-  adminer:
-    image: adminer
-    restart: unless-stopped
+    environment:
+      - REACT_APP_API_BASE=http://localhost:5000
     ports:
-      - "8080:8080"
+      - "3000:3000"
+    restart: unless-stopped
 
 volumes:
-  postgres_data:
+  pg_data:
