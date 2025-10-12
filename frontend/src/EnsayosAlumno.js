@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import "./EnsayosAlumno.css";
+
 const BACKEND_URL = process.env.REACT_APP_API_BASE || "http://localhost:5000";
 const buildImageSrc = (image_url) => {
   if (!image_url) return null;
@@ -9,19 +11,17 @@ const buildImageSrc = (image_url) => {
   return `${BACKEND_URL}${path}`;
 };
 
-export default function EnsayosAlumno({ user, volver }){
+export default function EnsayosAlumno({ user, volver }) {
   const [materia, setMateria] = useState("matematica");
   const [preguntas, setPreguntas] = useState([]);
   const [respuestas, setRespuestas] = useState({});
   const [resultado, setResultado] = useState(null);
   const [enviado, setEnviado] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(0);      // en segundos
+  const [timeLeft, setTimeLeft] = useState(0); // en segundos
   const [timerActive, setTimerActive] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-
   const DURATION_MIN = 10; //  Cambiar aqui la duracion (minutos)
-  
 
   const generarEnsayo = async () => {
     const res = await fetch(`http://localhost:5000/api/questions/${materia}`);
@@ -57,122 +57,287 @@ export default function EnsayosAlumno({ user, volver }){
     setRespuestas({ ...respuestas, [qId]: value });
   };*/
 
+  const [correctCount, setCorrectCount] = useState(0);
 
-const [correctCount, setCorrectCount] = useState(0);
+  const enviarEnsayo = async (auto = false) => {
+    if (submitting || enviado) return;
+    setSubmitting(true);
 
-const enviarEnsayo = async (auto = false) => {
-  if (submitting || enviado) return;
-  setSubmitting(true);
+    let correct = 0;
+    preguntas.forEach((p) => {
+      if (respuestas[p.id] === p.correct_answer) correct++;
+    });
+    setCorrectCount(correct);
+    setEnviado(true);
+    setTimerActive(false);
+    if (!user || !user.email) {
+      alert("Usuario no identificado. Vuelve a iniciar sesión.");
+      setSubmitting(false);
+      return;
+    }
+    // Guardar en backend
+    await fetch("http://localhost:5000/api/submit-essay", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        student_email: user.email, // user lo tienes del login
+        subject: materia,
+        correct,
+        total: preguntas.length,
+      }),
+    });
+    // También guardar en student_exams para vista de desempeño
+    const score = Math.round((correct / preguntas.length) * 100);
+    await fetch("http://localhost:5000/api/exams", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        student_email: user.email,
+        subject: materia,
+        score,
+      }),
+    });
 
-  let correct = 0;
-  preguntas.forEach(p => {
-    if (respuestas[p.id] === p.correct_answer) correct++;
-  });
-  setCorrectCount(correct);
-  setEnviado(true);
-  setTimerActive(false);
-  if (!user || !user.email) {
-  alert("Usuario no identificado. Vuelve a iniciar sesión.");
-  setSubmitting(false);
-  return;
-}
-  // Guardar en backend
-  await fetch("http://localhost:5000/api/submit-essay", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      student_email: user.email, // user lo tienes del login
-      subject: materia,
-      correct,
-      total: preguntas.length
-    })
-  });
-  // También guardar en student_exams para vista de desempeño
-  const score = Math.round((correct / preguntas.length) * 100);
-  await fetch("http://localhost:5000/api/exams", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      student_email: user.email,
-      subject: materia,
-      score
-    })
-  });
+    if (auto) {
+      // feedback discreto en auto-envío por tiempo agotado
+      // (mostrar un modal/toast)
+    }
+    setSubmitting(false);
+  };
 
-  if (auto) {
-    // feedback discreto en auto-envío por tiempo agotado
-    // (mostrar un modal/toast)
-  }
-  setSubmitting(false);
-};
+  // Agregar estos estados al componente
+  const [preguntaActual, setPreguntaActual] = useState(0);
+
   return (
-    <div style={{ padding: 20 }}>
-      <h2>Generar Ensayo</h2>
-      <select value={materia} onChange={e => setMateria(e.target.value)}>
-        <option value="matematica">Matematica</option>
-        <option value="historia">Historia</option>
-        <option value="ciencias">Ciencias</option>
-        <option value="lenguaje">Lenguaje</option>
-      </select>
-      <button onClick={generarEnsayo}>Generar ensayo</button>
+    <div className="ensayos-container">
+      <div className="ensayos-header">
+        <h2 className="ensayos-titulo">Generar Ensayo</h2>
+      </div>
+
+      <div className="ensayos-configuracion">
+        <div className="configuracion-grupo">
+          <select
+            className="form-select"
+            value={materia}
+            onChange={(e) => setMateria(e.target.value)}
+          >
+            <option value="matematica">Matemática</option>
+            <option value="historia">Historia</option>
+            <option value="ciencias">Ciencias</option>
+            <option value="lenguaje">Lenguaje</option>
+          </select>
+
+          <button className="ensayos-boton-generar" onClick={generarEnsayo}>
+            Generar ensayo
+          </button>
+        </div>
+      </div>
 
       {preguntas.length > 0 && (
-        <div style={{ marginTop: 10, fontWeight: "bold" }}>
-          Tiempo restante: {String(Math.floor(timeLeft/60)).padStart(2,"0")}:
-          {String(timeLeft%60).padStart(2,"0")}
-       </div>
+        <div
+          className={`ensayos-temporizador ${
+            timeLeft < 60 ? "temporizador-urgente" : ""
+          }`}
+        >
+          Tiempo restante: {String(Math.floor(timeLeft / 60)).padStart(2, "0")}:
+          {String(timeLeft % 60).padStart(2, "0")}
+        </div>
       )}
 
       {preguntas.length > 0 && (
-        <div>
-          <h3>Responde las preguntas:</h3>
-          {preguntas.map((p, i) => (
-            <li key={i}>
-              <b>{p.question}</b><br/>
-                {p.image_url && (
-                <div style={{ margin: "6px 0" }}>
+        <div className="ensayos-preguntas-layout">
+          {/* Sección izquierda - Pregunta actual */}
+          <div className="pregunta-actual-container">
+            <div className="pregunta-navegacion">
+              <button
+                className="navegacion-boton"
+                onClick={() =>
+                  setPreguntaActual((prev) => Math.max(0, prev - 1))
+                }
+                disabled={preguntaActual === 0}
+              >
+                ◄ Anterior
+              </button>
+
+              <span className="pregunta-contador">
+                Pregunta {preguntaActual + 1} de {preguntas.length}
+              </span>
+
+              <button
+                className="navegacion-boton"
+                onClick={() =>
+                  setPreguntaActual((prev) =>
+                    Math.min(preguntas.length - 1, prev + 1)
+                  )
+                }
+                disabled={preguntaActual === preguntas.length - 1}
+              >
+                Siguiente ►
+              </button>
+            </div>
+
+            <div className="pregunta-ensayo-actual">
+              <div className="pregunta-header">
+                <h4 className="pregunta-texto">
+                  {preguntas[preguntaActual]?.question}
+                </h4>
+              </div>
+
+              {preguntas[preguntaActual]?.image_url && (
+                <div className="pregunta-imagen">
                   <img
-                    src={buildImageSrc(p.image_url)}
+                    src={buildImageSrc(preguntas[preguntaActual].image_url)}
                     alt="ilustración de la pregunta"
-                    style={{ maxWidth: 300, height: "auto", display: "block" }}
+                    className="imagen-ensayo"
                     onError={(e) => {
-                      // fallback visual si por alguna razón la ruta no carga
                       e.currentTarget.style.display = "none";
-                      console.warn("No se pudo cargar la imagen de la pregunta:", p.image_url);
+                      console.warn(
+                        "No se pudo cargar la imagen de la pregunta:",
+                        preguntas[preguntaActual].image_url
+                      );
                     }}
                   />
                 </div>
               )}
 
-              {p.alternatives.map((a,j) => (
-                <label key={j}>
-                  <input
-                    type="radio"
-                    name={`pregunta-${i}`}
-                    value={a}
-                    checked={respuestas[p.id] === a}
-                    disabled={enviado || !timerActive}
-                    onChange={() => setRespuestas({ ...respuestas, [p.id]: a })}
-                  /> {a}
-                </label>
-              ))}
-            </li>
-          ))}
+              <div className="pregunta-alternativas">
+                {preguntas[preguntaActual]?.alternatives.map((a, j) => (
+                  <label
+                    key={j}
+                    className={`alternativa-label ${
+                      respuestas[preguntas[preguntaActual].id] === a
+                        ? "alternativa-seleccionada"
+                        : ""
+                    } ${
+                      enviado || !timerActive ? "alternativa-deshabilitada" : ""
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name={`pregunta-${preguntaActual}`}
+                      value={a}
+                      checked={respuestas[preguntas[preguntaActual].id] === a}
+                      disabled={enviado || !timerActive}
+                      onChange={() =>
+                        setRespuestas({
+                          ...respuestas,
+                          [preguntas[preguntaActual].id]: a,
+                        })
+                      }
+                      className="alternativa-input"
+                    />
+                    <span className="alternativa-texto">
+                      <span className="alternativa-letra">
+                        {String.fromCharCode(65 + j)}
+                      </span>
+                      {a}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Sección derecha - Navegación y estado */}
+          <div className="navegacion-grid-container">
+            <div className="navegacion-header">
+              <h4>Navegación</h4>
+              <div className="estado-leyenda">
+                <div className="leyenda-item">
+                  <div className="leyenda-color actual"></div>
+                  <span>Actual</span>
+                </div>
+                <div className="leyenda-item">
+                  <div className="leyenda-color respondida"></div>
+                  <span>Respondida</span>
+                </div>
+                <div className="leyenda-item">
+                  <div className="leyenda-color no-respondida"></div>
+                  <span>No respondida</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="preguntas-grid">
+              {preguntas.map((p, index) => {
+                const estaRespondida = respuestas[p.id] !== undefined;
+                const esActual = index === preguntaActual;
+
+                return (
+                  <button
+                    key={index}
+                    className={`grid-item ${
+                      esActual
+                        ? "grid-actual"
+                        : estaRespondida
+                        ? "grid-respondida"
+                        : "grid-no-respondida"
+                    }`}
+                    onClick={() => setPreguntaActual(index)}
+                  >
+                    {index + 1}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="navegacion-stats">
+              <div className="stat-item">
+                <span className="stat-label">Respondidas:</span>
+                <span className="stat-value">
+                  {Object.keys(respuestas).length} / {preguntas.length}
+                </span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">Progreso:</span>
+                <span className="stat-value">
+                  {Math.round(
+                    (Object.keys(respuestas).length / preguntas.length) * 100
+                  )}
+                  %
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
-       )}
-       {preguntas.length > 0 && !enviado && (
-         <button disabled={!timerActive || submitting} onClick={() => enviarEnsayo(false)}>
-           {submitting ? "Enviando..." : "Enviar ensayo"}
-         </button>
-       )}
-{enviado && (
-  <p>Respuestas correctas: {correctCount} / {preguntas.length}</p>
-)}
+      )}
 
-      {resultado && <h3>Resultado: {resultado}</h3>}
+      {preguntas.length > 0 && !enviado && (
+        <div className="ensayos-acciones">
+          <button
+            className={`ensayos-boton-enviar ${
+              !timerActive || submitting ? "boton-deshabilitado" : ""
+            }`}
+            disabled={!timerActive || submitting}
+            onClick={() => enviarEnsayo(false)}
+          >
+            {submitting ? "Enviando..." : "Finalizar ensayo"}
+          </button>
+        </div>
+      )}
 
-      <br/>
-      <button onClick={volver}>Volver</button>
+      {enviado && (
+        <div className="ensayos-resultado-container">
+          <div className="resultado-puntaje">
+            Respuestas correctas:{" "}
+            <strong>
+              {correctCount} / {preguntas.length}
+            </strong>
+          </div>
+          <div className="resultado-porcentaje">
+            Porcentaje:{" "}
+            <strong>
+              {Math.round((correctCount / preguntas.length) * 100)}%
+            </strong>
+          </div>
+        </div>
+      )}
+
+      <div className="ensayos-volver-container">
+        <button className="alumnos-boton-volver" onClick={volver}>
+          Volver
+        </button>
+      </div>
     </div>
   );
 }

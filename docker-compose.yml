@@ -50,9 +50,18 @@ services:
     depends_on:
       - backend
     environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
       - REACT_APP_API_BASE=http://localhost:5000
+      - FAST_REFRESH=true
     ports:
       - "3000:3000"
+    volumes:
+      - ./frontend:/app # Monta todo el directorio frontend
+      - /app/node_modules # Evita sobrescribir node_modules
+    stdin_open: true # Habilita stdin
+    tty: true # Habilita TTY
+    command: npm start # Sobrescribe el CMD del Dockerfile
     restart: unless-stopped
 
 volumes:

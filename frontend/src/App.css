@@ -36,3 +36,466 @@
     transform: rotate(360deg);
   }
 }
+
+/* === Pantalla inicial de selección === */
+.inicio-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: white;
+  color: #0d47a1;
+  text-align: center;
+  padding: 2rem;
+}
+
+.inicio-titulo {
+  font-size: 2.2rem;
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+}
+
+.inicio-subtitulo {
+  font-size: 1.1rem;
+  color: #1565c0;
+  margin-bottom: 2rem;
+}
+
+.inicio-botones {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.boton-seleccion {
+  background-color: #1976d2;
+  color: white;
+  border: none;
+  padding: 1rem 3rem;
+  font-size: 1.3rem;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.boton-seleccion:hover {
+  background-color: #0d47a1;
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.boton-seleccion:active {
+  transform: scale(0.97);
+}
+
+.boton-seleccion.profesor {
+  background-color: #1565c0;
+}
+
+.boton-seleccion.alumno {
+  background-color: #1e88e5;
+}
+
+/* === Formulario Login / Registro === */
+.login-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 16px;
+  padding: 3rem 4rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  max-width: 400px;
+  margin: 6rem auto;
+  text-align: center;
+  color: #0d47a1;
+}
+
+.login-titulo {
+  font-size: 1.8rem;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+}
+
+.login-rol {
+  font-size: 1rem;
+  color: #1976d2;
+}
+
+.login-form-group {
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+.login-input {
+  width: 100%;
+  padding: 0.9rem 1.2rem;
+  border: 1px solid #ccc;
+  border-radius: 12px;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.login-input:focus {
+  border-color: #1976d2;
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.15);
+}
+
+.login-boton {
+  background-color: #1976d2;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 0.9rem 2rem;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.login-boton:hover {
+  background-color: #0d47a1;
+  transform: translateY(-2px);
+}
+
+.login-toggle {
+  margin-top: 1rem;
+  color: #1976d2;
+  cursor: pointer;
+  font-size: 0.95rem;
+  text-decoration: underline;
+}
+
+.login-volver {
+  margin-top: 1.5rem;
+  background: none;
+  border: none;
+  color: #0d47a1;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+/* === Panel del Profesor === */
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: white;
+  color: #0d47a1;
+  text-align: center;
+  padding: 3rem 2rem;
+}
+
+.dashboard-titulo {
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.dashboard-subtitulo {
+  font-size: 1rem;
+  color: #1565c0;
+  margin-bottom: 2.5rem;
+}
+
+.dashboard-botones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+
+.dashboard-boton {
+  background-color: #1976d2;
+  color: white;
+  border: none;
+  padding: 1.2rem 2.5rem;
+  font-size: 1.1rem;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  min-width: 220px;
+}
+
+.dashboard-boton:hover {
+  background-color: #0d47a1;
+  transform: translateY(-2px);
+}
+
+.logout-boton {
+  background: none;
+  border: none;
+  color: #0d47a1;
+  font-weight: 500;
+  font-size: 1rem;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* === Estilos Globales === */
+/* html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden; /* evita scroll vertical y horizontal */
+
+/* === Página de Alumnos === */
+.alumnos-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+  background-color: white;
+  min-height: 100vh;
+}
+
+.alumnos-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.alumnos-titulo {
+  font-size: 2.2rem;
+  color: #0d47a1;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.alumnos-botones {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+  flex-wrap: wrap;
+}
+
+.alumnos-boton {
+  background-color: #1976d2;
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  min-width: 200px;
+}
+
+.alumnos-boton:hover {
+  background-color: #1565c0;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.alumnos-boton:active {
+  transform: translateY(0);
+}
+
+.alumnos-boton-activo {
+  background-color: #0d47a1;
+  box-shadow: 0 4px 12px rgba(13, 71, 161, 0.3);
+}
+
+.alumnos-lista-container {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.alumnos-subtitulo {
+  font-size: 1.5rem;
+  color: #0d47a1;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+.alumnos-lista-contenedor {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  max-height: 400px;
+  overflow-y: auto;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.alumnos-lista {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.alumnos-item {
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background-color 0.2s ease;
+}
+
+.alumnos-item:last-child {
+  border-bottom: none;
+}
+
+.alumnos-item:hover {
+  background-color: #f8f9fa;
+}
+
+.alumnos-item:nth-child(even) {
+  background-color: #fafafa;
+}
+
+.alumnos-item:nth-child(even):hover {
+  background-color: #f0f0f0;
+}
+
+.alumnos-email {
+  color: #333;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.alumnos-lista-vacio {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  padding: 2rem;
+}
+
+.alumnos-contador {
+  text-align: center;
+  color: #666;
+  font-size: 0.9rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+/* Estilos para la barra de scroll */
+.alumnos-lista-contenedor::-webkit-scrollbar {
+  width: 6px;
+}
+
+.alumnos-lista-contenedor::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 0 8px 8px 0;
+}
+
+.alumnos-lista-contenedor::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.alumnos-lista-contenedor::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* === Resultados del Curso === */
+.curso-resultados-container {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2rem;
+}
+
+.curso-subtitulo {
+  font-size: 1.5rem;
+  color: #0d47a1;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+.curso-tabla-contenedor {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.curso-tabla {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.curso-th {
+  background-color: #1976d2;
+  color: white;
+  padding: 1rem 1.5rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.curso-tr {
+  border-bottom: 1px solid #f0f0f0;
+  transition: background-color 0.2s ease;
+}
+
+.curso-tr:last-child {
+  border-bottom: none;
+}
+
+.curso-tr:hover {
+  background-color: #f8f9fa;
+}
+
+.curso-tr:nth-child(even) {
+  background-color: #fafafa;
+}
+
+.curso-tr:nth-child(even):hover {
+  background-color: #f0f0f0;
+}
+
+.curso-td {
+  padding: 1rem 1.5rem;
+  color: #333;
+  font-size: 1rem;
+}
+
+.curso-porcentaje {
+  font-weight: 600;
+  color: #0d47a1;
+}
+
+/* === Botón Volver === */
+.alumnos-volver-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+.alumnos-boton-volver {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 0.9rem 2.5rem;
+  font-size: 1.1rem;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  min-width: 150px;
+}
+
+.alumnos-boton-volver:hover {
+  background-color: #5a6268;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.alumnos-boton-volver:active {
+  transform: translateY(0);
+}
