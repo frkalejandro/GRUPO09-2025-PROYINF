@@ -1,5 +1,6 @@
 // frontend/src/AlumnosPage.js
 import { useState } from "react";
+import "./App.css";
 
 export default function AlumnosPage({ volver }) {
   const [view, setView] = useState(null); // null | "lista" | "curso"
@@ -31,50 +32,91 @@ export default function AlumnosPage({ volver }) {
   };
 
   return (
-    <div style={{ padding: 20 }}>
-      <h2>Página de Alumnos</h2>
+    <div className="alumnos-container">
+      <div className="alumnos-header">
+        <h2 className="alumnos-titulo">Página de Alumnos</h2>
+      </div>
 
-      <div style={{ marginBottom: 10 }}>
-        <button onClick={verListaAlumnos}>Ver lista de alumnos</button>{" "}
-        <button onClick={verResultadosComoCurso}>Ver resultados como curso</button>
+      <div className="alumnos-botones">
+        <button
+          className={`alumnos-boton ${
+            view === "lista" ? "alumnos-boton-activo" : ""
+          }`}
+          onClick={verListaAlumnos}
+        >
+          Ver lista de alumnos
+        </button>
+        <button
+          className={`alumnos-boton ${
+            view === "curso" ? "alumnos-boton-activo" : ""
+          }`}
+          onClick={verResultadosComoCurso}
+        >
+          Ver resultados como curso
+        </button>
       </div>
 
       {view === "lista" && (
-        <div>
-          <h3>Lista de alumnos</h3>
-          <ul style={{ listStyle: "none", padding: 0 }}>
-            {students.length === 0 && <li>No hay alumnos registrados</li>}
-            {students.map((s) => (
-              <li key={s.id}>{s.email}</li>
-            ))}
-          </ul>
+        <div className="alumnos-lista-container">
+          <h3 className="alumnos-subtitulo">Lista de alumnos</h3>
+          <div className="alumnos-lista-contenedor">
+            <ul className="alumnos-lista">
+              {students.length === 0 && (
+                <li className="alumnos-lista-vacio">
+                  No hay alumnos registrados
+                </li>
+              )}
+              {students.map((s) => (
+                <li key={s.id} className="alumnos-item">
+                  <span className="alumnos-email">{s.email}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          {students.length > 0 && (
+            <div className="alumnos-contador">
+              Total: {students.length} alumno{students.length !== 1 ? "s" : ""}
+            </div>
+          )}
         </div>
       )}
 
       {view === "curso" && (
-        <div>
-          <h3>Resultados como curso</h3>
-          <table border="1" cellPadding="6" style={{ borderCollapse: "collapse" }}>
-            <thead>
-              <tr>
-                <th>Asignaturas</th>
-                <th>Puntaje promedio (%)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {courseResults.map((r) => (
-                <tr key={r.subject}>
-                  <td style={{ textTransform: "capitalize" }}>{r.subject}</td>
-                  <td>{r.avg_percentage} %</td>
+        <div className="curso-resultados-container">
+          <h3 className="curso-subtitulo">Resultados como curso</h3>
+          <div className="curso-tabla-contenedor">
+            <table className="curso-tabla">
+              <thead>
+                <tr>
+                  <th className="curso-th">Asignaturas</th>
+                  <th className="curso-th">Puntaje promedio (%)</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {courseResults.map((r) => (
+                  <tr key={r.subject} className="curso-tr">
+                    <td
+                      className="curso-td"
+                      style={{ textTransform: "capitalize" }}
+                    >
+                      {r.subject}
+                    </td>
+                    <td className="curso-td curso-porcentaje">
+                      {r.avg_percentage} %
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
-      <br />
-      <button onClick={volver}>Volver</button>
+      <div className="alumnos-volver-container">
+        <button className="alumnos-boton-volver" onClick={volver}>
+          Volver
+        </button>
+      </div>
     </div>
   );
 }

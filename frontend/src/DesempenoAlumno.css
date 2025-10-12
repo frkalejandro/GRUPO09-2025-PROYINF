@@ -1,0 +1,299 @@
+/* === Desempeño del Alumno === */
+.desempeno-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+  background-color: white;
+  min-height: 100vh;
+}
+
+.desempeno-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.desempeno-titulo {
+  font-size: 2.2rem;
+  color: #0d47a1;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+/* === Búsqueda === */
+.desempeno-busqueda {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+}
+
+.busqueda-contenedor {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+}
+
+.busqueda-input {
+  width: 100%;
+  padding: 0.9rem 1.2rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.busqueda-input:focus {
+  border-color: #1976d2;
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.15);
+}
+
+.sugerencias-lista {
+  position: absolute;
+  z-index: 10;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  width: 100%;
+  max-height: 200px;
+  overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin-top: 2px;
+}
+
+.sugerencia-item {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background-color 0.2s ease;
+}
+
+.sugerencia-item:last-child {
+  border-bottom: none;
+}
+
+.sugerencia-item:hover {
+  background-color: #f8f9fa;
+}
+
+.desempeno-boton-buscar {
+  background-color: #1976d2;
+  color: white;
+  border: none;
+  padding: 0.9rem 2rem;
+  font-size: 1.1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  min-width: 160px;
+}
+
+.desempeno-boton-buscar:hover:not(:disabled) {
+  background-color: #1565c0;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.desempeno-boton-buscar:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* === Resumen === */
+.desempeno-resumen-container {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2rem;
+}
+
+.desempeno-subtitulo {
+  font-size: 1.5rem;
+  color: #0d47a1;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+.resumen-tabla-contenedor {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  margin-bottom: 1.5rem;
+}
+
+.resumen-tabla {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.resumen-th {
+  background-color: #1976d2;
+  color: white;
+  padding: 1rem 1.5rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.resumen-tr {
+  border-bottom: 1px solid #f0f0f0;
+  transition: background-color 0.2s ease;
+}
+
+.resumen-tr:last-child {
+  border-bottom: none;
+}
+
+.resumen-tr:hover {
+  background-color: #f8f9fa;
+}
+
+.resumen-td {
+  padding: 1rem 1.5rem;
+  color: #333;
+  font-size: 1rem;
+}
+
+.resumen-promedio {
+  font-weight: 600;
+  color: #0d47a1;
+}
+
+.resumen-vacio {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  padding: 2rem;
+}
+
+.resumen-global {
+  text-align: center;
+  font-size: 1.1rem;
+  color: #333;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+/* === Historial === */
+.desempeno-historial-container {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2rem;
+}
+
+.historial-contenedor {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  max-height: 500px;
+  overflow-y: auto;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.historial-lista {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.historial-item {
+  padding: 1.5rem;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background-color 0.2s ease;
+}
+
+.historial-item:last-child {
+  border-bottom: none;
+}
+
+.historial-item:hover {
+  background-color: #f8f9fa;
+}
+
+.historial-item:nth-child(even) {
+  background-color: #fafafa;
+}
+
+.historial-item:nth-child(even):hover {
+  background-color: #f0f0f0;
+}
+
+.historial-materia {
+  font-weight: 600;
+  color: #0d47a1;
+  margin-bottom: 0.75rem;
+  font-size: 1.1rem;
+}
+
+.historial-stats {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.stat-buenas {
+  color: #28a745;
+  font-weight: 500;
+}
+
+.stat-malas {
+  color: #dc3545;
+  font-weight: 500;
+}
+
+.stat-total {
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.stat-puntaje {
+  color: #ffc107;
+  font-weight: 600;
+}
+
+.historial-fecha {
+  color: #666;
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+.desempeno-volver-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+/* Scrollbars personalizadas */
+.sugerencias-lista::-webkit-scrollbar,
+.historial-contenedor::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sugerencias-lista::-webkit-scrollbar-track,
+.historial-contenedor::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 0 8px 8px 0;
+}
+
+.sugerencias-lista::-webkit-scrollbar-thumb,
+.historial-contenedor::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.sugerencias-lista::-webkit-scrollbar-thumb:hover,
+.historial-contenedor::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
