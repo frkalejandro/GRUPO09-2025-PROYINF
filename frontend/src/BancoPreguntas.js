@@ -15,6 +15,7 @@ export default function BancoPreguntas({ volver }) {
   const [preguntas, setPreguntas] = useState([]);
   const [imageFile, setImageFile] = useState(null);
   const [removeImage, setRemoveImage] = useState(false);
+  const [tags, setTags] = useState("");
 
   const handleCrear = async (e) => {
     e.preventDefault();
@@ -45,6 +46,8 @@ export default function BancoPreguntas({ volver }) {
     if (imageFile) form.append("image", imageFile);
     if (editId) form.append("remove_image", removeImage ? "true" : "false");
 
+    form.append("tags", tags);
+
     const res = await fetch(
       editId
         ? `http://localhost:5000/api/questions/${editId}`
@@ -66,6 +69,7 @@ export default function BancoPreguntas({ volver }) {
     setAlt4("");
     setSubject("matematica");
     setCorrectIndex(null);
+    setTags("");
 
     setEditId(null);
     setImageFile(null);
@@ -100,6 +104,7 @@ export default function BancoPreguntas({ volver }) {
     setAlt2(p.alternatives[1] || "");
     setAlt3(p.alternatives[2] || "");
     setAlt4(p.alternatives[3] || ""); // después de setAlt1..setAlt4 y setCorrect(p.correct_answer)
+    setTags((p.tags || []).join(", "));
     const idx = (p.alternatives || []).findIndex((a) => a === p.correct_answer);
     setCorrectIndex(idx >= 0 ? idx : null);
     setEditId(p.id); // si usas editId
@@ -249,6 +254,19 @@ export default function BancoPreguntas({ volver }) {
                 <option value="lenguaje">Lenguaje</option>
               </select>
             </div>
+
+            <div className="form-group">
+              <input
+                className="form-input"
+                placeholder="Etiquetas (separadas por coma), ej: álgebra, proporciones"
+                value={tags}
+                onChange={(e) => setTags(e.target.value)}
+              />
+              <small style={{ color: "#666" }}>
+                Se guardan en minúsculas; puedes usar varias separadas por comas.
+              </small>
+            </div>
+
 
             <button type="submit" className="banco-preguntas-boton-submit">
               {editId ? "Actualizar Pregunta" : "Agregar Pregunta"}

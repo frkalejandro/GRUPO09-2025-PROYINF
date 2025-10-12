@@ -6,6 +6,8 @@ import EnsayosAlumno from "./EnsayosAlumno";
 import ProgresoAlumno from "./ProgresoAlumno";
 import DesempenoAlumno from "./DesempenoAlumno";
 import "./App.css";
+import ResultadosGraficos from "./ResultadosGraficos";
+
 
 function App() {
   const [role, setRole] = useState("");
@@ -78,8 +80,13 @@ function App() {
   if (pagina === "progreso") {
     return <ProgresoAlumno user={user} volver={() => setPagina("inicio")} />;
   }
-  if (pagina === "desempeno")
+  if (pagina === "desempeno"){
     return <DesempenoAlumno volver={() => setPagina("inicio")} />;
+  }
+
+  if (pagina === "graficos") {
+    return <ResultadosGraficos user={user} volver={() => setPagina("inicio")} />;
+  }
 
   if (user) {
     if (user.role === "profesor") {
@@ -132,13 +139,22 @@ function App() {
             >
               Ensayos
             </button>
+            
             <button
               className="dashboard-boton"
               onClick={() => setPagina("progreso")}
             >
               Progreso
             </button>
+
+            <button
+              className="dashboard-boton"
+              onClick={() => setPagina("graficos")}
+            >
+              Mis gráficos
+            </button>
           </div>
+          
           <button className="logout-boton" onClick={logout}>
             Cerrar sesión
           </button>

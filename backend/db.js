@@ -52,6 +52,33 @@ pool.query(`
   );
   CREATE INDEX IF NOT EXISTS idx_results_email_subject ON results(student_email, subject);
   CREATE INDEX IF NOT EXISTS idx_results_email_time ON results(LOWER(student_email), created_at DESC);
+
+  -- Asegurar columna tags en questions
+  DO $$
+  BEGIN
+    IF NOT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name='questions' AND column_name='tags'
+    ) THEN
+      ALTER TABLE questions ADD COLUMN tags TEXT[] DEFAULT '{}';
+    END IF;
+  END $$;
+
+  -- Tabla de detalle por pregunta respondida
+  CREATE TABLE IF NOT EXISTS results_detail (
+    id SERIAL PRIMARY KEY,
+    student_email TEXT NOT NULL,
+    question_id INTEGER NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
+    subject TEXT NOT NULL CHECK (subject IN ('matematica','historia','ciencias','lenguaje')),
+    tags TEXT[] NOT NULL DEFAULT '{}',
+    chosen_answer TEXT NOT NULL,
+    correct_answer TEXT NOT NULL,
+    is_correct BOOLEAN NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_results_detail_email_time ON results_detail(LOWER(student_email), created_at);
+  CREATE INDEX IF NOT EXISTS idx_results_detail_tags ON results_detail USING GIN (tags);
 `);
 
 

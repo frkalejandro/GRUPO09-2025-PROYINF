@@ -75,17 +75,28 @@ export default function EnsayosAlumno({ user, volver }) {
       setSubmitting(false);
       return;
     }
-    // Guardar en backend
+
+    // Construir detalle de cada pregunta (para análisis por etiquetas)
+    const details = preguntas.map(p => ({
+      question_id: p.id,
+      chosen_answer: respuestas[p.id],
+      correct_answer: p.correct_answer,
+      tags: Array.isArray(p.tags) ? p.tags : []
+    }));
+
+    // Guardar en backend (con detalle completo)
     await fetch("http://localhost:5000/api/submit-essay", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        student_email: user.email, // user lo tienes del login
+        student_email: user.email,
         subject: materia,
         correct,
         total: preguntas.length,
+        details, // se manda el detalle
       }),
     });
+
     // También guardar en student_exams para vista de desempeño
     const score = Math.round((correct / preguntas.length) * 100);
     await fetch("http://localhost:5000/api/exams", {

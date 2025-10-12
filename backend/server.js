@@ -92,28 +92,36 @@ app.get("/api/students", async (req, res) => {
 });
 
 // Crear una pregunta
+// Crear una pregunta (con etiquetas)
+function normalizeTags(tagsRaw) {
+  if (!tagsRaw) return [];
+  if (Array.isArray(tagsRaw)) return tagsRaw.map(t => String(t).trim().toLowerCase()).filter(Boolean);
+  return String(tagsRaw)
+    .split(',')
+    .map(t => t.trim().toLowerCase())
+    .filter(Boolean);
+}
 
-app.post("/api/questions", upload.single('image'), async (req, res) => {
-  let { question, alternatives, correct_answer, subject } = req.body;
+app.post("/api/questions", upload.single("image"), async (req, res) => {
+  let { question, alternatives, correct_answer, subject, tags } = req.body;
   try {
-
-    // alternatives puede venir como string JSON desde multipart
-    if (typeof alternatives === 'string') {
-      alternatives = JSON.parse(alternatives);
-    }
+    if (typeof alternatives === "string") alternatives = JSON.parse(alternatives);
+    const tagsArr = normalizeTags(tags);
     const image_url = req.file ? `/uploads/${req.file.filename}` : null;
+
     const r = await pool.query(
-      "INSERT INTO questions (question, alternatives, correct_answer, subject, image_url) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-      [question, alternatives, correct_answer, subject, image_url]
-
+      `INSERT INTO questions (question, alternatives, correct_answer, subject, image_url, tags)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [question, alternatives, correct_answer, subject, image_url, tagsArr]
     );
-    res.json({ message: "Pregunta agregada", question: r.rows[0] });
 
+    res.json({ message: "Pregunta agregada", question: r.rows[0] });
   } catch (err) {
     console.error(err);
     res.status(400).json({ error: "Error agregando pregunta" });
   }
 });
+
 
 // Obtener preguntas por materia
 app.get("/api/questions/:subject", async (req, res) => {
@@ -131,34 +139,31 @@ app.get("/api/questions/:subject", async (req, res) => {
   }
 });
 
-
-// Editar pregunta por id
-app.put("/api/questions/:id", upload.single('image'), async (req, res) => {
+// Editar pregunta por id (con etiquetas)
+app.put("/api/questions/:id", upload.single("image"), async (req, res) => {
   const { id } = req.params;
-  let { question, alternatives, correct_answer, subject, remove_image } = req.body;
+  let { question, alternatives, correct_answer, subject, remove_image, tags } = req.body;
 
   try {
-    if (typeof alternatives === 'string') {
-      alternatives = JSON.parse(alternatives);
-    }
+    if (typeof alternatives === "string") alternatives = JSON.parse(alternatives);
+    const tagsArr = normalizeTags(tags);
+
     // obtener image_url actual
     const curr = await pool.query("SELECT image_url FROM questions WHERE id=$1", [id]);
     const currentUrl = curr.rows[0]?.image_url || null;
 
     // decidir nueva URL
     let image_url = currentUrl;
-    if (req.file) {
-      image_url = `/uploads/${req.file.filename}`;
-    } else if (remove_image === 'true') {
-      image_url = null;
-    }
+    if (req.file) image_url = `/uploads/${req.file.filename}`;
+    else if (remove_image === "true") image_url = null;
 
     const r = await pool.query(
-      "UPDATE questions SET question=$1, alternatives=$2, correct_answer=$3, subject=$4, image_url=$5 WHERE id=$6 RETURNING *",
-      [question, alternatives, correct_answer, subject, image_url, id]
+      `UPDATE questions
+       SET question=$1, alternatives=$2, correct_answer=$3, subject=$4, image_url=$5, tags=$6
+       WHERE id=$7 RETURNING *`,
+      [question, alternatives, correct_answer, subject, image_url, tagsArr, id]
     );
     res.json({ message: "Pregunta actualizada", question: r.rows[0] });
-
   } catch (err) {
     console.error(err);
     res.status(400).json({ error: "Error actualizando pregunta" });
@@ -240,18 +245,52 @@ app.get("/api/student-results/:student_email", async (req, res) => {
   }
 });
 
-// Guardar resultado de ensayo
+// Guardar resultado de ensayo (con detalle por pregunta)
 app.post("/api/submit-essay", async (req, res) => {
-  const { student_email, subject, correct, total } = req.body;
+  const { student_email, subject, correct, total, details } = req.body;
+  const client = await pool.connect();
+
   try {
-    await pool.query(
-      "INSERT INTO results (student_email, subject, correct, total) VALUES ($1,$2,$3,$4)",
+    await client.query("BEGIN");
+
+    // Inserta el resumen general (igual que antes)
+    await client.query(
+      "INSERT INTO results (student_email, subject, correct, total) VALUES ($1, $2, $3, $4)",
       [student_email, subject, correct, total]
     );
-    res.json({ message: "Ensayo guardado" });
+
+    // Si el frontend envía detalle de preguntas, lo guardamos
+    if (Array.isArray(details) && details.length > 0) {
+      const insertDetail = `
+        INSERT INTO results_detail
+        (student_email, question_id, subject, tags, chosen_answer, correct_answer, is_correct)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `;
+
+      for (const d of details) {
+        const tagsArr = Array.isArray(d.tags) ? d.tags : [];
+        const isCorrect = d.chosen_answer === d.correct_answer;
+
+        await client.query(insertDetail, [
+          student_email,
+          d.question_id,
+          subject,
+          tagsArr,
+          d.chosen_answer,
+          d.correct_answer,
+          isCorrect,
+        ]);
+      }
+    }
+
+    await client.query("COMMIT");
+    res.json({ message: "Ensayo guardado con detalle" });
   } catch (err) {
+    await client.query("ROLLBACK");
     console.error(err);
-    res.status(400).json({ error: "Error guardando ensayo" });
+    res.status(400).json({ error: "Error guardando ensayo con detalle" });
+  } finally {
+    client.release();
   }
 });
 
@@ -336,6 +375,57 @@ app.get("/api/student-summary/:student_email", async (req, res) => {
   }
 });
 
+// === NUEVOS ENDPOINTS PARA GRÁFICOS ===
 
+
+app.get("/api/tag-stats/:student_email", async (req, res) => {
+  const email = (req.params.student_email || "").toLowerCase();
+  const subject = (req.query.subject || "").toLowerCase(); // "" o una de: matematica,historia,ciencias,lenguaje
+  try {
+    const q = `
+      WITH exploded AS (
+        SELECT LOWER(student_email) AS email,
+               subject,
+               UNNEST(tags) AS tag,
+               is_correct
+        FROM results_detail
+        WHERE LOWER(student_email) = $1
+          AND ($2 = '' OR subject = $2)
+      )
+      SELECT tag,
+             SUM(CASE WHEN is_correct THEN 1 ELSE 0 END) AS correct,
+             SUM(CASE WHEN is_correct THEN 0 ELSE 1 END) AS wrong,
+             COUNT(*) AS total,
+             ROUND(100.0*AVG(CASE WHEN is_correct THEN 1.0 ELSE 0.0 END)::numeric,2) AS accuracy
+      FROM exploded
+      GROUP BY tag
+      ORDER BY tag;
+    `;
+    const r = await pool.query(q, [email, subject]);
+    res.json(r.rows);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Error obteniendo stats por etiqueta" });
+  }
+});
+
+
+// (B) Evolución temporal del rendimiento (línea de tiempo)
+app.get("/api/score-timeseries/:student_email", async (req, res) => {
+  const email = (req.params.student_email || "").toLowerCase();
+  try {
+    const r = await pool.query(
+      `SELECT created_at, subject, score
+       FROM student_exams
+       WHERE LOWER(student_email) = $1
+       ORDER BY created_at ASC`,
+      [email]
+    );
+    res.json(r.rows);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Error en timeseries" });
+  }
+});
 
 app.listen(5000, () => console.log('Backend en puerto 5000'));
