@@ -428,4 +428,374 @@ app.get("/api/score-timeseries/:student_email", async (req, res) => {
   }
 });
 
+// Crear un curso interno
+app.post("/api/internal-courses", async (req, res) => {
+  const { name, description, owner_email } = req.body;
+  if (!name || !owner_email) return res.status(400).json({ error: "Falta name u owner_email" });
+  try {
+    const r = await pool.query(
+      "INSERT INTO courses (name, description, owner_email) VALUES ($1, $2, $3) RETURNING *",
+      [name, description || null, owner_email]
+    );
+    res.json(r.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Error creando curso" });
+  }
+});
+
+// Listar cursos del profesor (owner_email)
+app.get("/api/internal-courses", async (req, res) => {
+  const owner = req.query.owner || null;
+  try {
+    const q = owner
+      ? ["SELECT * FROM courses WHERE owner_email = $1 ORDER BY created_at DESC", [owner]]
+      : ["SELECT * FROM courses ORDER BY created_at DESC", []];
+    const r = await pool.query(q[0], q[1]);
+    res.json(r.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Error listando cursos" });
+  }
+});
+
+// Importar alumnos (acepta JSON array en body) -> crea course_students
+// body: { students: [{student_email, display_name}, ...] }
+app.post("/api/internal-courses/:id/import-students", async (req, res) => {
+  const courseId = req.params.id;
+  const { students } = req.body;
+  if (!Array.isArray(students)) return res.status(400).json({ error: "students debe ser array" });
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    for (const s of students) {
+      await client.query(
+        "INSERT INTO course_students (course_id, student_email, display_name) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING",
+        [courseId, s.student_email, s.display_name || null]
+      );
+      // opcional: crear usuario local si no existe
+      await client.query(
+        `INSERT INTO users (email, password, role)
+         SELECT $1, $2, 'alumno'
+         WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = $1)`,
+        [s.student_email, "changeme123"] // contraseña temporal — cambia por flujo de invitación
+      );
+    }
+    await client.query("COMMIT");
+    res.json({ message: "Alumnos importados" });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error(err);
+    res.status(500).json({ error: "Error importando alumnos" });
+  } finally {
+    client.release();
+  }
+});
+
+// Listar alumnos de un curso interno
+app.get("/api/internal-courses/:id/students", async (req, res) => {
+  const courseId = req.params.id;
+  try {
+    const r = await pool.query("SELECT * FROM course_students WHERE course_id=$1 ORDER BY created_at", [courseId]);
+    res.json(r.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Error obteniendo alumnos" });
+  }
+});
+
+// Asignar un "ensayo" a un curso con materia y cantidad de preguntas
+// body: { title, description, subject, num_questions }
+app.post("/api/internal-courses/:id/assign", async (req, res) => {
+  const courseId = req.params.id;
+  const { title, description, subject, num_questions } = req.body;
+
+  if (!title || !subject || !num_questions) {
+    return res.status(400).json({ error: "Faltan campos: title, subject, num_questions" });
+  }
+
+  if (!['matematica','historia','ciencias','lenguaje'].includes(String(subject).toLowerCase())) {
+    return res.status(400).json({ error: "subject inválido" });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const ar = await client.query(
+      `INSERT INTO course_assignments (course_id, title, description, subject, num_questions)
+       VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+      [courseId, title, description || null, subject.toLowerCase(), Number(num_questions)]
+    );
+    const assignment = ar.rows[0];
+
+    // Crea una asignación para cada alumno del curso
+    const students = await client.query(
+      "SELECT student_email FROM course_students WHERE course_id=$1",
+      [courseId]
+    );
+
+    for (const s of students.rows) {
+      await client.query(
+        `INSERT INTO student_assignments (assignment_id, student_email, status)
+         VALUES ($1, $2, 'pending')`,
+        [assignment.id, s.student_email.toLowerCase()]
+      );
+
+      // (opcional) crear usuario si no existe ya: lo haces en import-students
+    }
+
+    await client.query("COMMIT");
+    res.json({ message: "Ensayo asignado al curso", assignment });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error(err);
+    res.status(500).json({ error: "Error asignando ensayo" });
+  } finally {
+    client.release();
+  }
+});
+
+// Ver asignaciones de un alumno (pendientes o en curso o completadas)
+app.get("/api/student-assignments/:student_email", async (req, res) => {
+  const email = (req.params.student_email || "").toLowerCase();
+  try {
+    const r = await pool.query(
+      `SELECT sa.id AS student_assignment_id,
+              sa.status,
+              sa.score, sa.correct, sa.total,
+              sa.created_at, sa.started_at, sa.completed_at,
+              ca.title, ca.description, ca.subject, ca.num_questions
+       FROM student_assignments sa
+       JOIN course_assignments ca ON ca.id = sa.assignment_id
+       WHERE LOWER(sa.student_email) = $1
+       ORDER BY sa.created_at DESC`,
+      [email]
+    );
+    res.json(r.rows);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Error listando asignaciones" });
+  }
+});
+
+/// Comenzar SIEMPRE desde cero: reinicia y fija nuevas preguntas
+app.post("/api/student-assignments/:id/start", async (req, res) => {
+  const saId = req.params.id;
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const sa = await client.query(
+      `SELECT sa.id, sa.status, sa.student_email, ca.subject, ca.num_questions
+       FROM student_assignments sa
+       JOIN course_assignments ca ON ca.id = sa.assignment_id
+       WHERE sa.id = $1 FOR UPDATE`,
+      [saId]
+    );
+    if (sa.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Asignación no encontrada" });
+    }
+
+    const row = sa.rows[0];
+    if (row.status === "completed") {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "La asignación ya fue completada." });
+    }
+
+    // 🔥 Elimina cualquier selección previa para que NO exista reanudar
+    await client.query(
+      `DELETE FROM assignment_questions WHERE student_assignment_id=$1`,
+      [saId]
+    );
+
+    // Seleccionar preguntas aleatorias de la materia
+    const qq = await client.query(
+      `SELECT id FROM questions WHERE subject=$1 ORDER BY random() LIMIT $2`,
+      [row.subject, row.num_questions]
+    );
+    if (qq.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "No hay preguntas en esa materia" });
+    }
+
+    // Guardar la nueva selección fija
+    for (let i = 0; i < qq.rows.length; i++) {
+      await client.query(
+        `INSERT INTO assignment_questions (student_assignment_id, question_id, position)
+         VALUES ($1,$2,$3)`,
+        [saId, qq.rows[i].id, i + 1]
+      );
+    }
+
+    // Estado 'started' (solo informativo; no habrá reanudación porque no persistimos set previo)
+    await client.query(
+      `UPDATE student_assignments SET status='started', started_at=NOW() WHERE id=$1`,
+      [saId]
+    );
+
+    // Retornar las NUEVAS preguntas completas
+    const full = await client.query(
+      `SELECT aq.position, q.*
+       FROM assignment_questions aq
+       JOIN questions q ON q.id = aq.question_id
+       WHERE aq.student_assignment_id = $1
+       ORDER BY aq.position ASC`,
+      [saId]
+    );
+
+    await client.query("COMMIT");
+    res.json({ status: "started", questions: full.rows });
+  } catch (e) {
+    await client.query("ROLLBACK");
+    console.error(e);
+    res.status(500).json({ error: "Error al iniciar asignación" });
+  } finally {
+    client.release();
+  }
+});
+
+// Enviar respuestas: { answers: [{question_id, chosen_answer}, ...] }
+app.post("/api/student-assignments/:id/submit", async (req, res) => {
+  const saId = req.params.id;
+  const { answers } = req.body;
+  if (!Array.isArray(answers) || answers.length === 0) {
+    return res.status(400).json({ error: "answers vacío" });
+  }
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    // Cargar asignación y sus preguntas
+    const saQ = await client.query(
+      `SELECT sa.id, sa.student_email, sa.status, ca.subject
+       FROM student_assignments sa
+       JOIN course_assignments ca ON ca.id = sa.assignment_id
+       WHERE sa.id=$1 FOR UPDATE`,
+      [saId]
+    );
+    if (saQ.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Asignación no encontrada" });
+    }
+    const { student_email, status, subject } = saQ.rows[0];
+
+    const qs = await client.query(
+      `SELECT aq.question_id, q.correct_answer, q.tags
+       FROM assignment_questions aq
+       JOIN questions q ON q.id = aq.question_id
+       WHERE aq.student_assignment_id = $1`,
+      [saId]
+    );
+    const map = new Map(qs.rows.map(r => [r.question_id, { correct: r.correct_answer, tags: r.tags || [] }]));
+
+    // Corrección
+    let correct = 0;
+    for (const a of answers) {
+      const ref = map.get(a.question_id);
+      if (ref && a.chosen_answer === ref.correct) correct++;
+    }
+    const total = qs.rows.length || answers.length;
+    const score = Math.round((correct / total) * 100);
+
+    // Guardar resultados (igual que flujo anterior)
+    await client.query(
+      "INSERT INTO results (student_email, subject, correct, total) VALUES ($1,$2,$3,$4)",
+      [student_email, subject, correct, total]
+    );
+
+    // Detalle por pregunta
+    const insertDetail = `
+      INSERT INTO results_detail
+      (student_email, question_id, subject, tags, chosen_answer, correct_answer, is_correct)
+      VALUES ($1,$2,$3,$4,$5,$6,$7)
+    `;
+    for (const a of answers) {
+      const ref = map.get(a.question_id);
+      if (!ref) continue;
+      await client.query(insertDetail, [
+        student_email,
+        a.question_id,
+        subject,
+        ref.tags,
+        a.chosen_answer,
+        ref.correct,
+        a.chosen_answer === ref.correct
+      ]);
+    }
+
+    // Registro para vistas de profesor/alumno
+    await client.query(
+      "INSERT INTO student_exams (student_email, subject, score) VALUES ($1,$2,$3)",
+      [student_email, subject, score]
+    );
+
+    // Cerrar asignación
+    await client.query(
+      `UPDATE student_assignments
+       SET status='completed', completed_at=NOW(), score=$2, correct=$3, total=$4
+       WHERE id=$1`,
+      [saId, score, correct, total]
+    );
+
+    await client.query("COMMIT");
+    res.json({ message: "Asignación enviada", correct, total, score });
+  } catch (e) {
+    await client.query("ROLLBACK");
+    console.error(e);
+    res.status(500).json({ error: "Error enviando asignación" });
+  } finally {
+    client.release();
+  }
+});
+
+app.post("/api/student-assignments/:id/cancel", async (req, res) => {
+  const saId = req.params.id;
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const sa = await client.query(
+      `SELECT id, status FROM student_assignments WHERE id=$1 FOR UPDATE`,
+      [saId]
+    );
+    if (sa.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Asignación no encontrada" });
+    }
+    if (sa.rows[0].status === "completed") {
+      await client.query("ROLLBACK");
+      return res
+        .status(400)
+        .json({ error: "La asignación ya fue completada, no puede cancelarse." });
+    }
+
+    // Elimina las preguntas asociadas a esta sesión
+    await client.query(
+      `DELETE FROM assignment_questions WHERE student_assignment_id=$1`,
+      [saId]
+    );
+
+    // Devuelve el estado a 'pending' para poder volver a comenzar desde cero
+    await client.query(
+      `UPDATE student_assignments
+         SET status='pending', started_at=NULL
+       WHERE id=$1`,
+      [saId]
+    );
+
+    await client.query("COMMIT");
+    res.json({ message: "Asignación cancelada y reiniciada" });
+  } catch (e) {
+    await client.query("ROLLBACK");
+    console.error(e);
+    res.status(500).json({ error: "Error cancelando la asignación" });
+  } finally {
+    client.release();
+  }
+});
+
 app.listen(5000, () => console.log('Backend en puerto 5000'));

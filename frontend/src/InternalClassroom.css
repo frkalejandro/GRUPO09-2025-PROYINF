@@ -1,0 +1,257 @@
+/* === Contenedor general === */
+.internal-container {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 2rem;
+  background-color: #ffffff;
+  min-height: 100vh;
+}
+
+/* === Header === */
+.internal-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+.internal-titulo {
+  font-size: 2.2rem;
+  color: #0d47a1;
+  font-weight: 700;
+  margin: 0 0 0.25rem 0;
+}
+.internal-subtitulo {
+  color: #666;
+  margin: 0;
+}
+
+/* === Card === */
+.internal-card {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  border: 1px solid #e9ecef;
+  margin-bottom: 1.5rem;
+}
+.internal-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.internal-card-titulo {
+  margin: 0;
+  color: #0d47a1;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+/* === Badges === */
+.badge-info {
+  background: #e3f2fd;
+  color: #0d47a1;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.badge-curso {
+  background: #eaf7ea;
+  color: #1b5e20;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* === Formularios === */
+.internal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.form-label {
+  color: #333;
+  font-weight: 600;
+}
+.form-input,
+.form-textarea {
+  padding: 0.9rem 1rem;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  background: #fff;
+}
+.form-input:focus,
+.form-textarea:focus {
+  border-color: #1976d2;
+  box-shadow: 0 0 0 3px rgba(25,118,210,0.15);
+}
+.form-textarea {
+  resize: vertical;
+}
+
+/* === Grid (dos columnas) === */
+.internal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+.grid-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* === Lista de cursos === */
+.internal-lista {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.internal-item {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 1rem;
+  transition: background 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+  margin-bottom: 0.8rem;
+}
+.internal-item:hover {
+  background: #f8fbff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+.internal-item.seleccionado {
+  border-color: #1976d2;
+  box-shadow: 0 0 0 2px rgba(25,118,210,0.12);
+  background: #eef6ff;
+}
+.item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.curso-nombre {
+  font-weight: 700;
+  color: #0d47a1;
+}
+.curso-fecha {
+  color: #6c757d;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+.curso-desc {
+  color: #555;
+  margin: 0.25rem 0 0.75rem 0;
+}
+.item-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* === Botones === */
+.internal-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.btn-primario {
+  background-color: #1976d2;
+  color: white;
+  border: none;
+  padding: 0.8rem 1.2rem;
+  font-size: 0.95rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 4px 8px rgba(25, 118, 210, 0.15);
+}
+.btn-primario:hover {
+  background-color: #1565c0;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 12px rgba(25, 118, 210, 0.25);
+}
+
+.btn-secundario {
+  background-color: #e9ecef;
+  color: #212529;
+  border: none;
+  padding: 0.7rem 1rem;
+  font-size: 0.95rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-secundario:hover {
+  background-color: #dfe3e6;
+  transform: translateY(-1px);
+}
+
+.btn-volver {
+  background-color: #6c757d;
+  color: #fff;
+  border: none;
+  padding: 0.7rem 1rem;
+  font-size: 0.95rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-volver:hover {
+  background-color: #5a6268;
+  transform: translateY(-1px);
+}
+
+/* === Tabla alumnos === */
+.tabla-wrapper {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+}
+.tabla thead th {
+  background-color: #1976d2;
+  color: white;
+  padding: 0.9rem 1rem;
+  text-align: left;
+  font-weight: 700;
+}
+.tabla tbody td {
+  padding: 0.85rem 1rem;
+  border-top: 1px solid #f0f0f0;
+  color: #333;
+}
+
+/* === Estados e hints === */
+.estado-vacio {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  padding: 1rem 0.5rem;
+}
+.hint {
+  color: #666;
+  font-size: 0.95rem;
+  margin: 0.25rem 0 0;
+}
+
+/* === Responsive === */
+@media (max-width: 900px) {
+  .internal-grid {
+    grid-template-columns: 1fr;
+  }
+}

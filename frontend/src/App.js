@@ -7,6 +7,7 @@ import ProgresoAlumno from "./ProgresoAlumno";
 import DesempenoAlumno from "./DesempenoAlumno";
 import "./App.css";
 import ResultadosGraficos from "./ResultadosGraficos";
+import InternalClassroom from "./InternalClassroom";
 
 
 function App() {
@@ -87,7 +88,9 @@ function App() {
   if (pagina === "graficos") {
     return <ResultadosGraficos user={user} volver={() => setPagina("inicio")} />;
   }
-
+  if (pagina === "internalClassroom") {
+  return <InternalClassroom user={user} volver={() => setPagina("inicio")} />;
+  }
   if (user) {
     if (user.role === "profesor") {
       return (
@@ -118,6 +121,15 @@ function App() {
             >
               Desempeño de Alumnos
             </button>
+
+            <button 
+              className="dashboard-boton"
+              onClick={() => setPagina("internalClassroom")}
+              >
+              Simular Classroom
+
+            </button>
+
           </div>
 
           <button className="logout-boton" onClick={logout}>
@@ -139,7 +151,7 @@ function App() {
             >
               Ensayos
             </button>
-            
+
             <button
               className="dashboard-boton"
               onClick={() => setPagina("progreso")}

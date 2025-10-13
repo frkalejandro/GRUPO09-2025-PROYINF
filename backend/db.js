@@ -79,6 +79,76 @@ pool.query(`
 
   CREATE INDEX IF NOT EXISTS idx_results_detail_email_time ON results_detail(LOWER(student_email), created_at);
   CREATE INDEX IF NOT EXISTS idx_results_detail_tags ON results_detail USING GIN (tags);
+
+  -- Tabla de cursos internos (simulated classroom)
+  CREATE TABLE IF NOT EXISTS courses (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    owner_email TEXT NOT NULL,  -- profesor que creó el curso (email local)
+    classroom_course_id TEXT,   -- NULL hasta que sincronices con Google
+    created_at TIMESTAMP DEFAULT NOW()
+  );
+
+  -- Tabla de relación curso - alumno (roster interno)
+  CREATE TABLE IF NOT EXISTS course_students (
+    id SERIAL PRIMARY KEY,
+    course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+    student_email TEXT NOT NULL,
+    display_name TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+  );
+  CREATE INDEX IF NOT EXISTS idx_course_students_course ON course_students(course_id);
+
+  -- Tabla de asignaciones publicadas a un curso (ensayo asignado)
+  CREATE TABLE IF NOT EXISTS course_assignments (
+    id SERIAL PRIMARY KEY,
+    course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+    essay_id INTEGER, -- si tienes un id de ensayo en tu modelo; NULL si no
+    title TEXT NOT NULL,
+    description TEXT,
+    assigned_at TIMESTAMP DEFAULT NOW(),
+    classroom_assignment_id TEXT, -- cuando se publique en Classroom real
+    created_at TIMESTAMP DEFAULT NOW()
+  );
+  CREATE INDEX IF NOT EXISTS idx_course_assignments_course ON course_assignments(course_id);
+
+  -- Opcional (si aún no existe): campos para integración futura en users
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id TEXT;
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS google_tokens JSONB;
+  
+  
+  -- Extiende course_assignments con materia y cantidad de preguntas
+  ALTER TABLE course_assignments
+    ADD COLUMN IF NOT EXISTS subject TEXT
+      CHECK (subject IN ('matematica','historia','ciencias','lenguaje')),
+    ADD COLUMN IF NOT EXISTS num_questions INTEGER;
+
+  -- Nueva tabla: asignaciones por estudiante
+  CREATE TABLE IF NOT EXISTS student_assignments (
+    id SERIAL PRIMARY KEY,
+    assignment_id INTEGER NOT NULL REFERENCES course_assignments(id) ON DELETE CASCADE,
+    student_email TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('pending','started','completed')) DEFAULT 'pending',
+    score INTEGER,
+    correct INTEGER,
+    total INTEGER,
+    created_at TIMESTAMP DEFAULT NOW(),
+    started_at TIMESTAMP,
+    completed_at TIMESTAMP
+  );
+  CREATE INDEX IF NOT EXISTS idx_student_assignments_student ON student_assignments(LOWER(student_email), status);
+
+  -- Preguntas seleccionadas para cada asignación de estudiante (se fijan al comenzar)
+  CREATE TABLE IF NOT EXISTS assignment_questions (
+    id SERIAL PRIMARY KEY,
+    student_assignment_id INTEGER NOT NULL REFERENCES student_assignments(id) ON DELETE CASCADE,
+    question_id INTEGER NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
+    position INTEGER NOT NULL,
+    UNIQUE (student_assignment_id, question_id),
+    UNIQUE (student_assignment_id, position)
+  );
+  CREATE INDEX IF NOT EXISTS idx_assignment_questions_sa ON assignment_questions(student_assignment_id);
 `);
 
 
