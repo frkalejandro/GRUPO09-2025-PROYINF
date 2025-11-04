@@ -1,3 +1,15 @@
+/**
+ * @file server.js
+ * @project Plataforma PAES
+ * @description Servidor principal de la aplicación. Gestiona rutas REST para alumnos, cursos,
+ * resultados y simulación de Classroom.
+ * @architecture Arquitectura por capas (backend REST + frontend React + BD PostgreSQL)
+ * @author Equipo
+ * @version Hito 4
+ * @notes Este archivo incorpora comentarios JSDoc para mejorar la trazabilidad y
+ * mantenibilidad del código, conforme al método ATAM (Bellomo et al., 2015).
+ */
+
 const express = require('express');
 const cors = require('cors');
 const pool = require('./db');
@@ -377,6 +389,21 @@ app.get("/api/student-summary/:student_email", async (req, res) => {
 
 // === NUEVOS ENDPOINTS PARA GRÁFICOS ===
 
+/**
+ * @endpoint GET /api/tag-stats/:student_email
+ * @description Retorna el rendimiento del alumno agrupado por etiquetas (tags) de preguntas.
+ * @param {string} student_email - Correo electrónico del alumno, utilizado para filtrar resultados.
+ * @query {string} [subject] - (Opcional) Materia específica para filtrar las etiquetas.
+ * @returns {Array<Object>} Lista de objetos con las siguientes propiedades:
+ *  - tag: nombre de la etiqueta
+ *  - correct: cantidad de respuestas correctas
+ *  - wrong: cantidad de respuestas incorrectas
+ *  - total: total de preguntas por etiqueta
+ *  - accuracy: porcentaje de aciertos
+ * @qualityAttributes Rendimiento, Modificabilidad
+ * @notes Este endpoint fue probado en el Hito 3 con resultados exitosos.  
+ * Utiliza consultas agregadas a la base de datos y envía los resultados procesados al frontend.
+ */
 
 app.get("/api/tag-stats/:student_email", async (req, res) => {
   const email = (req.params.student_email || "").toLowerCase();
@@ -409,6 +436,18 @@ app.get("/api/tag-stats/:student_email", async (req, res) => {
   }
 });
 
+/**
+ * @endpoint GET /api/score-timeseries/:student_email
+ * @description Devuelve la evolución del puntaje del alumno en el tiempo, ordenada ascendentemente.
+ * @param {string} student_email - Correo del alumno para obtener su historial de puntajes.
+ * @returns {Array<Object>} Arreglo de objetos con:
+ *  - created_at: fecha de creación del ensayo
+ *  - subject: materia del ensayo
+ *  - score: puntaje obtenido
+ * @qualityAttributes Rendimiento, Usabilidad
+ * @notes Endpoint implementado y probado en el Hito 3.  
+ * Los datos se preprocesan en el backend para mejorar el rendimiento del frontend.
+ */
 
 // (B) Evolución temporal del rendimiento (línea de tiempo)
 app.get("/api/score-timeseries/:student_email", async (req, res) => {
@@ -459,34 +498,68 @@ app.get("/api/internal-courses", async (req, res) => {
   }
 });
 
-// Importar alumnos (acepta JSON array en body) -> crea course_students
-// body: { students: [{student_email, display_name}, ...] }
+
+/**
+ * @endpoint POST /api/internal-courses/:id/import-students
+ * @description Simula la importación de alumnos a un curso interno de la plataforma.
+ * No hay conexión real con la API de Google Classroom; esta ruta replica su comportamiento
+ * para validar la arquitectura REST y la integridad de datos.
+ *
+ * @param {string} id - ID del curso (course_id) recibido en la URL.
+ * @body {Array<Object>} students - Lista de objetos con propiedades:
+ *   - student_email: correo del alumno
+ *   - display_name: nombre a mostrar
+ *
+ * @returns {Object} JSON con mensaje y cantidad de alumnos importados.
+ *
+ * @qualityAttributes Mantenibilidad, Interoperabilidad, Integridad de datos
+ * @notes La inserción usa transacción y la cláusula SQL ON CONFLICT DO NOTHING
+ *        para evitar duplicados. Se crean usuarios locales con contraseña temporal
+ *        sólo si no existen previamente.
+ */
 app.post("/api/internal-courses/:id/import-students", async (req, res) => {
   const courseId = req.params.id;
   const { students } = req.body;
-  if (!Array.isArray(students)) return res.status(400).json({ error: "students debe ser array" });
+
+  // Validación del formato de entrada
+  if (!Array.isArray(students) || students.length === 0) {
+    return res
+      .status(400)
+      .json({ error: "students debe ser un array no vacío de objetos alumno" });
+  }
+
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+
     for (const s of students) {
+      // Inserta en la tabla intermedia sin duplicar (gracias a ON CONFLICT)
       await client.query(
-        "INSERT INTO course_students (course_id, student_email, display_name) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING",
+        `INSERT INTO course_students (course_id, student_email, display_name)
+         VALUES ($1, $2, $3)
+         ON CONFLICT DO NOTHING`,
         [courseId, s.student_email, s.display_name || null]
       );
-      // opcional: crear usuario local si no existe
+
+      // Crea usuario local si no existe
       await client.query(
         `INSERT INTO users (email, password, role)
          SELECT $1, $2, 'alumno'
          WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = $1)`,
-        [s.student_email, "changeme123"] // contraseña temporal — cambia por flujo de invitación
+        [s.student_email, "changeme123"] // Contraseña temporal simulada
       );
     }
+
     await client.query("COMMIT");
-    res.json({ message: "Alumnos importados" });
+    res.json({
+      success: true,
+      count: students.length,
+      message: "Alumnos importados correctamente (simulación).",
+    });
   } catch (err) {
     await client.query("ROLLBACK");
-    console.error(err);
-    res.status(500).json({ error: "Error importando alumnos" });
+    console.error("Error importando alumnos:", err);
+    res.status(500).json({ error: "Error importando alumnos (simulación fallida)" });
   } finally {
     client.release();
   }

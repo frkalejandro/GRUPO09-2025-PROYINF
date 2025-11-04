@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import "./InternalClassroom.css";
 
+// NOTA IMPORTANTE:
+// Este componente implementa una simulación interna del flujo de Google Classroom.
+// No utiliza credenciales ni la API oficial de Google.
+// Su propósito es probar la arquitectura REST (backend Express + frontend React)
+// y el flujo de creación de cursos, importación de alumnos y asignación de ensayos.
+
 const API = process.env.REACT_APP_API_BASE || "http://localhost:5000";
 
 export default function InternalClassroom({ user, volver }) {
@@ -104,7 +110,7 @@ export default function InternalClassroom({ user, volver }) {
         body: JSON.stringify({ name: nm, description: desc || null, owner_email: owner })
       });
       setName(""); setDesc("");
-      showMsg("Curso creado");
+      showMsg("Curso creado correctamente (simulación)");
       await fetchCourses();
     } catch (e) { console.error(e); showErr(e.message); }
   };
@@ -195,7 +201,7 @@ export default function InternalClassroom({ user, volver }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ students: payload })
       });
-      showMsg(`Importados ${payload.length} alumno(s)`);
+      showMsg(`Se importaron ${payload.length} alumno(s) correctamente (simulación).`);
       setStudentsText(""); setStudentsParsed([]);
       fetchCourseStudents(selectedCourse);
     } catch (e) { console.error(e); showErr(e.message); }
@@ -232,6 +238,19 @@ export default function InternalClassroom({ user, volver }) {
         <h1 className="internal-titulo">Classroom Interno</h1>
         <p className="internal-subtitulo">Crea cursos, importa alumnos sin duplicados y asigna ensayos.</p>
       </header>
+
+      <p
+        style={{
+          fontStyle: "italic",
+          color: "#555",
+          background: "#f1f5f9",
+          padding: "8px 12px",
+          borderRadius: "8px",
+          margin: "8px 0"
+      }}
+      >
+        Esta es una simulación interna de Google Classroom. No existe conexión real con la API de Google.
+      </p>
 
       {(msg || err) && (
         <div

@@ -19,9 +19,9 @@ export default function ResultadosGraficos({ user, volver }) {
   const [timeSeries, setTimeSeries] = useState([]);  // [{ created_at, subject, score, date }]
 
   // Filtros independientes
-  const [materiaFiltroEtiquetas, setMateriaFiltroEtiquetas] = useState("todas");
-  const [materiaFiltroSerie, setMateriaFiltroSerie] = useState("todas");
-  const materias = ["todas", "matematica", "historia", "ciencias", "lenguaje"];
+  const [materiaFiltroEtiquetas, setMateriaFiltroEtiquetas] = useState("Todas");
+  const [materiaFiltroSerie, setMateriaFiltroSerie] = useState("Todas");
+  const materias = ["Todas", "Matemática", "Historia", "Ciencias", "Lenguaje"];
 
   // Loaders independientes
   const [loadingTags, setLoadingTags] = useState(true);
@@ -36,7 +36,7 @@ export default function ResultadosGraficos({ user, volver }) {
       try {
         const email = encodeURIComponent(user.email);
         const subjectParam =
-          materiaFiltroEtiquetas !== "todas" ? `?subject=${materiaFiltroEtiquetas}` : "";
+          materiaFiltroEtiquetas !== "Todas" ? `?subject=${materiaFiltroEtiquetas}` : "";
         const r = await fetch(`http://localhost:5000/api/tag-stats/${email}${subjectParam}`);
         const tags = await r.json();
         if (!cancel) {
@@ -93,14 +93,15 @@ export default function ResultadosGraficos({ user, volver }) {
   // Materias disponibles para la serie (derivadas de datos)
   const materiasDisponibles = useMemo(() => {
     const set = new Set(timeSeries.map((s) => s.subject));
-    return ["todas", ...Array.from(set)];
+    return ["Todas", ...Array.from(set)];
   }, [timeSeries]);
 
   // Serie filtrada por materia (solo para el LineChart)
   const timeSeriesFiltrada = useMemo(() => {
-    if (materiaFiltroSerie === "todas") return timeSeries;
+    if (materiaFiltroSerie === "Todas") return timeSeries;
     return timeSeries.filter((s) => s.subject === materiaFiltroSerie);
   }, [timeSeries, materiaFiltroSerie]);
+
 
   return (
     <div className="dashboard-container" style={{ alignItems: "stretch" }}>
@@ -141,7 +142,7 @@ export default function ResultadosGraficos({ user, volver }) {
           >
             {materias.map((m) => (
               <option key={m} value={m}>
-                {m === "todas"
+                {m === "Todas"
                   ? "Todas las materias"
                   : m.charAt(0).toUpperCase() + m.slice(1)}
               </option>
